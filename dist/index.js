@@ -15741,6 +15741,14 @@ const { isUint8Array, isArrayBuffer } = __nccwpck_require__(9830)
 const { File: UndiciFile } = __nccwpck_require__(8511)
 const { parseMIMEType, serializeAMimeType } = __nccwpck_require__(685)
 
+let random
+try {
+  const crypto = __nccwpck_require__(6005)
+  random = (max) => crypto.randomInt(0, max)
+} catch {
+  random = (max) => Math.floor(Math.random(max))
+}
+
 let ReadableStream = globalThis.ReadableStream
 
 /** @type {globalThis['File']} */
@@ -15826,7 +15834,7 @@ function extractBody (object, keepalive = false) {
     // Set source to a copy of the bytes held by object.
     source = new Uint8Array(object.buffer.slice(object.byteOffset, object.byteOffset + object.byteLength))
   } else if (util.isFormDataLike(object)) {
-    const boundary = `----formdata-undici-0${`${Math.floor(Math.random() * 1e11)}`.padStart(11, '0')}`
+    const boundary = `----formdata-undici-0${`${random(1e11)}`.padStart(11, '0')}`
     const prefix = `--${boundary}\r\nContent-Disposition: form-data`
 
     /*! formdata-polyfill. MIT License. Jimmy Wärting <https://jimmy.warting.se/opensource> */
@@ -30395,6 +30403,7 @@ function planBranchAction(now, branch, filters, commitComments, params) {
 function logActionRunConfiguration(params, staleCutoff, removeCutoff) {
     if (params.isDryRun) {
         console.log("Running in dry-run mode. No branch will be removed.");
+        console.log("test123.");
     }
     console.log(`Branches updated before ${(0, formatISO_1.formatISO)(staleCutoff)} will be marked as stale`);
     if (params.daysBeforeBranchDelete == 0) {
@@ -30476,7 +30485,21 @@ function removeStaleBranches(octokit, params) {
                     core.endGroup();
                 }
                 if (operations >= params.operationsPerRun) {
-                    console.log("Stopping after " + operations + " operations");
+                    console.log("Setting test output and stopping");
+                    core.setOutput("testoutput", "test output");
+                    const actionSummary = [
+                        `${summary.scanned} scanned`,
+                        `${icons.skip} ${summary.skip} skipped`,
+                        `${icons["mark stale"]} ${summary["mark stale"]} marked stale`,
+                        `${icons["keep stale"]} ${summary["keep stale"]} kept stale`,
+                        `${icons.remove} ${summary.remove} removed`,
+                    ].join(", ");
+                    core.setOutput("branches_scanned", summary.scanned);
+                    core.setOutput("branches_marked_stale", summary["mark stale"]);
+                    core.setOutput("branches_kept_stale", summary["keep stale"]);
+                    core.setOutput("branches_removed", summary.remove);
+                    core.setOutput("branches_skipped", summary.skip);
+                    console.log(`Summary:  ${actionSummary}`);
                     return;
                 }
             }
@@ -30495,6 +30518,11 @@ function removeStaleBranches(octokit, params) {
             `${icons["keep stale"]} ${summary["keep stale"]} kept stale`,
             `${icons.remove} ${summary.remove} removed`,
         ].join(", ");
+        core.setOutput("branches_scanned", summary.scanned);
+        core.setOutput("branches_marked_stale", summary["mark stale"]);
+        core.setOutput("branches_kept_stale", summary["keep stale"]);
+        core.setOutput("branches_removed", summary.remove);
+        core.setOutput("branches_skipped", summary.skip);
         console.log(`Summary:  ${actionSummary}`);
     });
 }
@@ -30603,6 +30631,14 @@ module.exports = require("https");
 
 "use strict";
 module.exports = require("net");
+
+/***/ }),
+
+/***/ 6005:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:crypto");
 
 /***/ }),
 
