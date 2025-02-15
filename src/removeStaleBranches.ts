@@ -22,6 +22,13 @@ async function processBranch(
   params: Params,
   summary: Record<Plan["action"], number> & { scanned: number; staleBranchesNames: string; branchesToDeleteNames: string }
 ) {
+  if (plan.action === "mark stale") {
+    summary.staleBranchesNames += branch.branchName;
+  }
+  if (plan.action === "remove") {
+    summary.branchesToDeleteNames += branch.branchName;
+  }
+
   console.log(
     "-> branch was last updated by " +
       (branch.author?.username || branch.author?.email || "(unknown user)") +
@@ -65,13 +72,11 @@ async function processBranch(
   );
 
   if (plan.action === "keep stale") {
-    summary.staleBranchesNames += branch.branchName;
     console.log("-> branch will be removed on " + formatISO(plan.cutoffTime));
     return;
   }
 
   if (plan.action === "remove") {
-    summary.branchesToDeleteNames += branch.branchName;
     console.log(
       "-> branch was slated for deletion on " + formatISO(plan.cutoffTime)
     );

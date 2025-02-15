@@ -30290,6 +30290,12 @@ const date_fns_1 = __nccwpck_require__(5468);
 function processBranch(plan, branch, commitComments, params, summary) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a, _b, _c;
+        if (plan.action === "mark stale") {
+            summary.staleBranchesNames += branch.branchName;
+        }
+        if (plan.action === "remove") {
+            summary.branchesToDeleteNames += branch.branchName;
+        }
         console.log("-> branch was last updated by " +
             (((_a = branch.author) === null || _a === void 0 ? void 0 : _a.username) || ((_b = branch.author) === null || _b === void 0 ? void 0 : _b.email) || "(unknown user)") +
             " on " +
@@ -30316,12 +30322,10 @@ function processBranch(plan, branch, commitComments, params, summary) {
         }
         console.log("-> branch was marked stale on " + (0, formatISO_1.formatISO)(plan.lastCommentTime));
         if (plan.action === "keep stale") {
-            summary.staleBranchesNames += branch.branchName;
             console.log("-> branch will be removed on " + (0, formatISO_1.formatISO)(plan.cutoffTime));
             return;
         }
         if (plan.action === "remove") {
-            summary.branchesToDeleteNames += branch.branchName;
             console.log("-> branch was slated for deletion on " + (0, formatISO_1.formatISO)(plan.cutoffTime));
             console.log("-> removing branch");
             if (params.isDryRun) {
