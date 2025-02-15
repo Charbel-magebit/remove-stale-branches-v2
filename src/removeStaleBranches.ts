@@ -19,7 +19,8 @@ async function processBranch(
   plan: Plan,
   branch: Branch,
   commitComments: TaggedCommitComments,
-  params: Params
+  params: Params,
+  summary: Record<Plan["action"], number> & { scanned: number; staleBranchesNames: string; branchesToDeleteNames: string }
 ) {
   console.log(
     "-> branch was last updated by " +
@@ -64,11 +65,13 @@ async function processBranch(
   );
 
   if (plan.action === "keep stale") {
+    summary.staleBranchesNames += branch.branchName;
     console.log("-> branch will be removed on " + formatISO(plan.cutoffTime));
     return;
   }
 
   if (plan.action === "remove") {
+    summary.branchesToDeleteNames += branch.branchName;
     console.log(
       "-> branch was slated for deletion on " + formatISO(plan.cutoffTime)
     );
@@ -251,12 +254,14 @@ export async function removeStaleBranches(
   };
   const commitComments = new TaggedCommitComments(repo, octokit, headers);
   let operations = 0;
-  let summary: Record<Plan["action"], number> & { scanned: number } = {
+  let summary: Record<Plan["action"], number> & { scanned: number; staleBranchesNames: string; branchesToDeleteNames: string } = {
     remove: 0,
     "mark stale": 0,
     "keep stale": 0,
     skip: 0,
     scanned: 0,
+    staleBranchesNames: "",
+    branchesToDeleteNames: "",
   };
 
   if (params.ignoreUnknownAuthors && !params.defaultRecipient) {
@@ -301,7 +306,7 @@ export async function removeStaleBranches(
     summary[plan.action]++;
     core.startGroup(`${icons[plan.action]} branch ${branch.branchName}`);
     try {
-      await processBranch(plan, branch, commitComments, params);
+      await processBranch(plan, branch, commitComments, params, summary);
 
       if (plan.action !== "skip" && plan.action != "keep stale") {
         operations++;
@@ -327,7 +332,11 @@ export async function removeStaleBranches(
       core.setOutput("branches_kept_stale", summary["keep stale"]);
       core.setOutput("branches_removed", summary.remove);
       core.setOutput("branches_skipped", summary.skip);
+      core.setOutput("staleBranchesNames", summary.staleBranchesNames);
+      core.setOutput("branchesToDeleteNames", summary.branchesToDeleteNames);
       console.log(`Summary:  ${actionSummary}`);
+      console.log(`staleBranchesNames:  ${summary.staleBranchesNames}`);
+      console.log(`branchesToDeleteNames:  ${summary.branchesToDeleteNames}`);
       return;
     }
   }

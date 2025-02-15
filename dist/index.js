@@ -30287,7 +30287,7 @@ const commitComments_1 = __nccwpck_require__(78);
 const readBranches_1 = __nccwpck_require__(2996);
 const core = __importStar(__nccwpck_require__(2186));
 const date_fns_1 = __nccwpck_require__(5468);
-function processBranch(plan, branch, commitComments, params) {
+function processBranch(plan, branch, commitComments, params, summary) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a, _b, _c;
         console.log("-> branch was last updated by " +
@@ -30316,10 +30316,12 @@ function processBranch(plan, branch, commitComments, params) {
         }
         console.log("-> branch was marked stale on " + (0, formatISO_1.formatISO)(plan.lastCommentTime));
         if (plan.action === "keep stale") {
+            summary.staleBranchesNames += branch.branchName;
             console.log("-> branch will be removed on " + (0, formatISO_1.formatISO)(plan.cutoffTime));
             return;
         }
         if (plan.action === "remove") {
+            summary.branchesToDeleteNames += branch.branchName;
             console.log("-> branch was slated for deletion on " + (0, formatISO_1.formatISO)(plan.cutoffTime));
             console.log("-> removing branch");
             if (params.isDryRun) {
@@ -30448,6 +30450,8 @@ function removeStaleBranches(octokit, params) {
             "keep stale": 0,
             skip: 0,
             scanned: 0,
+            staleBranchesNames: "",
+            branchesToDeleteNames: "",
         };
         if (params.ignoreUnknownAuthors && !params.defaultRecipient) {
             console.error("When ignoring unknown authors, you must specify a default recipient");
@@ -30476,7 +30480,7 @@ function removeStaleBranches(octokit, params) {
                 summary[plan.action]++;
                 core.startGroup(`${icons[plan.action]} branch ${branch.branchName}`);
                 try {
-                    yield processBranch(plan, branch, commitComments, params);
+                    yield processBranch(plan, branch, commitComments, params, summary);
                     if (plan.action !== "skip" && plan.action != "keep stale") {
                         operations++;
                     }
@@ -30499,7 +30503,11 @@ function removeStaleBranches(octokit, params) {
                     core.setOutput("branches_kept_stale", summary["keep stale"]);
                     core.setOutput("branches_removed", summary.remove);
                     core.setOutput("branches_skipped", summary.skip);
+                    core.setOutput("staleBranchesNames", summary.staleBranchesNames);
+                    core.setOutput("branchesToDeleteNames", summary.branchesToDeleteNames);
                     console.log(`Summary:  ${actionSummary}`);
+                    console.log(`staleBranchesNames:  ${summary.staleBranchesNames}`);
+                    console.log(`branchesToDeleteNames:  ${summary.branchesToDeleteNames}`);
                     return;
                 }
             }
